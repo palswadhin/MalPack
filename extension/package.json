@@ -1,0 +1,101 @@
+{
+  "name": "malpack",
+  "displayName": "MalPack",
+  "description": "Automated Malicious PyPI Package Detector",
+  "version": "0.0.17",
+  "publisher": "swadhinpal",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swadhinpal/MalPack"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "icon": "malpack_icon.ico",
+  "main": "./out/dist/index.js",
+  "activationEvents": [
+    "*"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "malpack.install",
+        "title": "MalPack: Secure Install"
+      },
+      {
+        "command": "malpack.nextFinding",
+        "title": "MalPack: Go to Next Malicious Finding"
+      },
+      {
+        "command": "malpack.prevFinding",
+        "title": "MalPack: Go to Previous Malicious Finding"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "malpack.nextFinding",
+        "key": "alt+right",
+        "mac": "alt+right",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "malpack.prevFinding",
+        "key": "alt+left",
+        "mac": "alt+left",
+        "when": "editorTextFocus"
+      }
+    ],
+    "configuration": {
+      "title": "MalPack Settings",
+      "properties": {
+        "malpack.backendUrl": {
+          "type": "string",
+          "default": "https://malpack-backend1.onrender.com",
+          "description": "URL of the MalPack backend server. Use http://localhost:8000 for local development."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "malpack-sidebar",
+          "title": "MalPack",
+          "icon": "malpack_sidebar.svg"
+        }
+      ]
+    },
+    "views": {
+      "malpack-sidebar": [
+        {
+          "id": "malpack.sidebarView",
+          "name": "MalPack Scanner",
+          "type": "webview",
+          "icon": "malpack_sidebar.svg"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile && npx -y @vercel/ncc build out/extension.js -o out/dist --minify --no-source-map-register",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "build": "npx -y @vercel/ncc build out/extension.js -o out/dist --minify --no-source-map-register"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.10",
+    "axios": "^1.6.0",
+    "p-limit": "^7.3.0",
+    "tar": "^7.5.9"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.5",
+    "@types/node": "^18.16.0",
+    "@types/tar": "^6.1.13",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.1.0"
+  }
+}

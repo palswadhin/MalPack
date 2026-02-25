@@ -1,0 +1,18 @@
+# Exclude source and configs
+src/**
+.vscode/**
+.vscode-test/**
+.git/**
+tsconfig.json
+.eslintrc.json
+
+# TypeScript & maps
+**/*.ts
+**/*.map
+
+# Dependencies (bundle not used)
+# node_modules/**
+
+# Misc
+.gitignore
+!.vscodeignore

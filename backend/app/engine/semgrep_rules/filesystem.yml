@@ -1,0 +1,40 @@
+rules:
+  - id: python.lang.security.audit.file-write-generic
+    patterns:
+      - pattern: open(..., "w")
+    message: "File write detected"
+    languages: [python]
+    severity: INFO
+
+  - id: python.lang.security.audit.file-write-sensitive
+    patterns:
+      - pattern-either:
+           - pattern: open("/etc/...", ...)
+           - pattern: open("/root/...", ...)
+           - pattern: open(".../.ssh/...", ...)
+    message: "Write to sensitive directory detected"
+    languages: [python]
+    severity: WARNING
+
+  - id: python.lang.security.audit.file-delete-destructive
+    patterns:
+      - pattern-either:
+          - pattern: os.remove(...)
+          - pattern: shutil.rmtree(...)
+    message: "File deletion detected"
+    languages: [python]
+    severity: WARNING
+
+  - id: python.lang.security.audit.file-modify-startup
+    patterns:
+       - pattern-regex: ".*(\\.bashrc|\\.profile|/etc/rc\\.local).*"
+    message: "Reference to startup file detected"
+    languages: [python]
+    severity: WARNING
+    
+  - id: python.lang.security.audit.file-env-hijack
+    patterns:
+      - pattern: os.putenv("PATH", ...)
+    message: "PATH environment variable modification detected"
+    languages: [python]
+    severity: WARNING

@@ -1,0 +1,7 @@
+rules:
+  - id: subprocess-shell-true
+    patterns:
+      - pattern: subprocess.$FUNC(..., shell=True, ...)
+    message: "Semgrep: Subprocess with shell=True detected"
+    languages: [python]
+    severity: ERROR

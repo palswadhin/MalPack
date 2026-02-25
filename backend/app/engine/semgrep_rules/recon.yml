@@ -1,0 +1,27 @@
+rules:
+  - id: python.lang.security.audit.recon-system-fingerprint
+    patterns:
+      - pattern-either:
+          - pattern: platform.system()
+          - pattern: platform.release()
+          - pattern: os.uname()
+    message: "System fingerprinting detected"
+    languages: [python]
+    severity: INFO
+
+  - id: python.lang.security.audit.recon-directory-enum
+    patterns:
+      - pattern-either:
+          - pattern: os.listdir(...)
+          - pattern: os.walk(...)
+          - pattern: glob.glob(...)
+    message: "Directory enumeration detected"
+    languages: [python]
+    severity: INFO
+
+  - id: python.lang.security.audit.recon-sensitive-read
+    patterns:
+       - pattern-regex: ".*(/etc/passwd|/etc/shadow|id_rsa).*"
+    message: "Reference to sensitive file detected"
+    languages: [python]
+    severity: WARNING

@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-multipart
+semgrep
+google-generativeai
+google-genai
+requests
+python-dotenv
+# standard libs: ast, subprocess, etc.

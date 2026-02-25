@@ -1,0 +1,33 @@
+rules:
+  - id: python.lang.security.audit.exfil-file-upload
+    patterns:
+      - pattern-either:
+          - pattern: requests.post(..., files=..., ...)
+          - pattern: requests.put(..., files=..., ...)
+    message: "File upload detected"
+    languages: [python]
+    severity: WARNING
+
+  - id: python.lang.security.audit.exfil-env-credentials
+    patterns:
+      - pattern-either:
+          - pattern: requests.post(..., data=os.environ, ...)
+          - pattern: requests.get(..., params=os.environ, ...)
+          - pattern: requests.post(..., json=os.environ, ...)
+    message: "Environment variable exfiltration detected"
+    languages: [python]
+    severity: WARNING
+
+  - id: python.lang.security.audit.exfil-webhook
+    patterns:
+       - pattern-regex: "https://(discord|hooks.slack).*"
+    message: "Webhook URL detected"
+    languages: [python]
+    severity: WARNING
+    
+  - id: python.lang.security.audit.exfil-pastebin
+    patterns:
+       - pattern-regex: "https://pastebin.com/.*"
+    message: "Pastebin URL detected"
+    languages: [python]
+    severity: WARNING

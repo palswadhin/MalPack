@@ -1,0 +1,52 @@
+rules:
+  - id: python.lang.security.audit.exec-eval-dynamic
+    patterns:
+      - pattern-either:
+          - pattern: eval(...)
+          - pattern: exec(...)
+          - pattern: compile(...)
+      - pattern-not: eval("...")
+      - pattern-not: exec("...")
+    message: "Dynamic code execution via eval/exec detected"
+    languages: [python]
+    severity: WARNING
+
+  - id: python.lang.security.audit.exec-shell-command
+    patterns:
+      - pattern-either:
+          - pattern: os.system(...)
+          - pattern: os.popen(...)
+          - pattern: subprocess.call(..., shell=True, ...)
+          - pattern: subprocess.run(..., shell=True, ...)
+          - pattern: subprocess.Popen(..., shell=True, ...)
+    message: "Shell command execution detected"
+    languages: [python]
+    severity: WARNING
+
+  - id: python.lang.security.audit.exec-binary-file
+    patterns:
+      - pattern-either:
+          - pattern: os.chmod(..., ...)
+          - pattern: subprocess.Popen(..., ...)
+    message: "Potential binary file execution or permission change"
+    languages: [python]
+    severity: WARNING
+
+  - id: python.lang.security.audit.exec-script-file
+    patterns:
+      - pattern-either:
+          - pattern: subprocess.call([..., "sh", ...])
+          - pattern: subprocess.call([..., "bash", ...])
+    message: "Script file execution detected"
+    languages: [python]
+    severity: WARNING
+
+  - id: python.lang.security.audit.exec-hidden-code
+    patterns:
+      - pattern-either:
+           - pattern: exec(base64.b64decode(...))
+           - pattern: eval(base64.b64decode(...))
+           - pattern: exec(zlib.decompress(...))
+    message: "Hidden code execution detected (decode + exec)"
+    languages: [python]
+    severity: WARNING

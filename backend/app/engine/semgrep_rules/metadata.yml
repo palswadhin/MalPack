@@ -1,0 +1,14 @@
+rules:
+  - id: python.lang.security.audit.metadata-setup-call
+    patterns:
+      - pattern: setup(...)
+    message: "setup() call detected. Check arguments for anomalies."
+    languages: [python]
+    severity: INFO
+
+  - id: python.lang.security.audit.metadata-install-requires-url
+    patterns:
+       - pattern-regex: "install_requires=.*(http|git).*"
+    message: "URL dependency in install_requires detected"
+    languages: [python]
+    severity: WARNING

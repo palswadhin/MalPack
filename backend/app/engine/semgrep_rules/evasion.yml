@@ -1,0 +1,47 @@
+rules:
+  - id: python.lang.security.audit.evade-hidden-process
+    patterns:
+      - pattern-either:
+          - pattern: setproctitle.setproctitle(...)
+    message: "Process name spoofing/hiding detected"
+    languages: [python]
+    severity: WARNING
+
+  - id: python.lang.security.audit.evade-base64-decode
+    patterns:
+      - pattern: base64.b64decode(...)
+    message: "Base64 decoding detected"
+    languages: [python]
+    severity: INFO
+
+  - id: python.lang.security.audit.evade-encrypted-payload
+    patterns:
+      - pattern-either:
+          - pattern: cryptography.fernet.Fernet(...)
+          - pattern: Crypto.Cipher.AES.new(...)
+    message: "Encryption library usage detected"
+    languages: [python]
+    severity: INFO
+
+  - id: python.lang.security.audit.evade-suppress-error
+    patterns:
+       - pattern: contextlib.suppress(...)
+    message: "Explicit error suppression detected"
+    languages: [python]
+    severity: INFO
+
+  - id: python.lang.security.audit.evade-silent-exit
+    patterns:
+      - pattern-either:
+          - pattern: sys.exit(0)
+          - pattern: raise SystemExit
+    message: "Silent process exit detected"
+    languages: [python]
+    severity: INFO
+    
+  - id: python.lang.security.audit.evade-obfuscation
+    patterns:
+      - pattern: getattr(..., "...")
+    message: "Dynamic attribute access detected (potential obfuscation)"
+    languages: [python]
+    severity: INFO

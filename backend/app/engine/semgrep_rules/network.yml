@@ -1,0 +1,47 @@
+rules:
+  - id: python.lang.security.audit.network-download-payload
+    patterns:
+      - pattern-either:
+          - pattern: urllib.request.urlretrieve(...)
+          - pattern: requests.get(...)
+          - pattern: requests.post(...)
+    message: "Network request detected (potential download)"
+    languages: [python]
+    severity: INFO
+
+  - id: python.lang.security.audit.network-reverse-shell
+    patterns:
+      - pattern: subprocess.call(..., stdin=..., ...)
+    message: "Potential reverse shell detected (subprocess with stdin)"
+    languages: [python]
+    severity: WARNING
+
+  - id: python.lang.security.audit.network-suspicious-domain
+    patterns:
+       - pattern-regex: "https?://.*(pastebin|discord|ngrok).*"
+    message: "Connection to suspicious domain detected"
+    languages: [python]
+    severity: WARNING
+
+  - id: python.lang.security.audit.network-ssl-disabled
+    patterns:
+      - pattern-either:
+          - pattern: requests.get(..., verify=False, ...)
+          - pattern: requests.post(..., verify=False, ...)
+    message: "SSL verification disabled"
+    languages: [python]
+    severity: WARNING
+
+  - id: python.lang.security.audit.network-http-unencrypted
+    patterns:
+       - pattern-regex: "http://[a-zA-Z0-9]"
+    message: "Unencrypted HTTP URL detected"
+    languages: [python]
+    severity: WARNING
+    
+  - id: python.lang.security.audit.network-dns-tunneling
+    patterns:
+       - pattern: socket.gethostbyname(...)
+    message: "DNS lookup detected (potential tunneling)"
+    languages: [python]
+    severity: INFO
